@@ -1353,5 +1353,81 @@ class ApiService {
     }
   }
 
+  Future<Map<String,dynamic>> updateProfile({
+    required String name,
+    required String email,
+    required String mobileNumber,
+
+  }) async{
+
+    final url = Uri.parse("$baseUrl/auth/profile");
+
+    final payload ={
+      "name":name.trim(),
+      "email":email.trim(),
+      "mobileNumber":mobileNumber.trim(),
+    };
+
+    try{
+      final headers = await _getHeaders();
+
+      final response = await http.put(url,
+      headers: headers,
+        body: jsonEncode(payload)
+      );
+
+      final decoded = jsonDecode(response.body);
+
+      if(response.statusCode==200){
+        return{
+          "success":true,
+          "data":decoded,
+          "message":decoded['message']??"Profile Updated Successfully",
+        };
+      }else{
+        return{
+          "success":false,
+          "message":decoded['message']??"Profile Updated Successfully",
+        };
+      }
+    }catch(e){
+      return{
+        "success":false,
+        "message":e.toString(),
+      };
+    }
+  }
+
+
+  Future<Map<String, dynamic>> fetchProfile() async {
+    final url = Uri.parse('$baseUrl/auth/profile');
+
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(url, headers: headers);
+      final decoded = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'data': decoded['data'] ?? decoded,
+          'message': decoded['message'] ?? 'Profile loaded',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': decoded['message'] ?? 'Failed to load profile',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
+    }
+  }
+
+
 
 }

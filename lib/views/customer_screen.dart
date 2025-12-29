@@ -16,6 +16,7 @@ class CustomersScreen extends StatefulWidget {
 class _CustomersScreenState extends State<CustomersScreen> {
   final ApiService _apiService = ApiService();
   List<dynamic> _customers = [];
+  List<dynamic> _filteredCustomers = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
 
@@ -38,6 +39,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
       if (response['success']) {
         setState(() {
           _customers = response['data'] ?? [];
+          _filteredCustomers = List.from(_customers); // important
           _isLoading = false;
         });
         print('📊 Total customers loaded: ${_customers.length}');
@@ -54,6 +56,32 @@ class _CustomersScreenState extends State<CustomersScreen> {
       print('❌ Error fetching customers: $e');
     }
   }
+
+  void _onSearchChanged(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredCustomers = List.from(_customers);
+      });
+      return;
+    }
+
+    final lowerQuery = query.toLowerCase();
+
+    setState(() {
+      _filteredCustomers = _customers.where((customer) {
+        final firstName = (customer['firstName'] ?? '').toLowerCase();
+        final lastName = (customer['lastName'] ?? '').toLowerCase();
+        final phone = (customer['phone'] ?? '').toLowerCase();
+        final email = (customer['email'] ?? '').toLowerCase();
+
+        return firstName.contains(lowerQuery) ||
+            lastName.contains(lowerQuery) ||
+            phone.contains(lowerQuery) ||
+            email.contains(lowerQuery);
+      }).toList();
+    });
+  }
+
 
   void _showAddCustomerDialog() {
     showDialog(
@@ -156,19 +184,20 @@ class _CustomersScreenState extends State<CustomersScreen> {
                 CustomSearchBar(
                   controller: _searchController,
                   hintText: 'Search customers',
-                  onChanged: (value) {
-                    debugPrint('Searching: $value');
-                    // TODO: filter your list here
-                  },
+                  onChanged: _onSearchChanged,
                   onClear: () {
-                    debugPrint('Search cleared');
+                    _searchController.clear();
+                    setState(() {
+                      _filteredCustomers = List.from(_customers);
+                    });
                   },
                 ),
+
                 const SizedBox(height: 16),
                 // PrimaryButton(label: "+ Add Customer", onPressed: _showAddCustomerDialog),
                 const SizedBox(height: 16),
 
-                if (_customers.isEmpty)
+                if (_filteredCustomers.isEmpty)
                   const Center(
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
@@ -182,7 +211,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     ),
                   )
                 else
-                  ..._customers.map((customer) {
+                  ..._filteredCustomers.map((customer) {
+
                     final firstName = customer['firstName'] ?? '';
                     final lastName = customer['lastName'] ?? '';
 

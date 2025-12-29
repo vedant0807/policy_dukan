@@ -49,6 +49,45 @@ class SessionManager {
     }
   }
 
+  // Save/Update user data (without token)
+  Future<bool> saveUserData(Map<String, dynamic> userData) async {
+    try {
+      print('💾 Updating user data...');
+      print('💾 User Data: ${jsonEncode(userData)}');
+
+      final prefs = await SharedPreferences.getInstance();
+
+      // Update only the fields that are provided
+      if (userData.containsKey('id')) {
+        await prefs.setString(_keyUserId, userData['id'] ?? '');
+      }
+      if (userData.containsKey('name')) {
+        await prefs.setString(_keyUserName, userData['name'] ?? '');
+      }
+      if (userData.containsKey('email')) {
+        await prefs.setString(_keyUserEmail, userData['email'] ?? '');
+      }
+      if (userData.containsKey('mobileNumber')) {
+        await prefs.setString(_keyUserMobile, userData['mobileNumber'] ?? '');
+      }
+      if (userData.containsKey('role')) {
+        await prefs.setString(_keyUserRole, userData['role'] ?? '');
+      }
+      if (userData.containsKey('permissions')) {
+        await prefs.setString(
+          _keyUserPermissions,
+          jsonEncode(userData['permissions'] ?? []),
+        );
+      }
+
+      print('✅ User data updated successfully!');
+      return true;
+    } catch (e) {
+      print('❌ Error saving user data: $e');
+      return false;
+    }
+  }
+
   // Get token
   Future<String?> getToken() async {
     try {

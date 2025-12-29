@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/views/add_lead.dart';
+import 'package:policy_dukaan/views/renewal_screen.dart';
 import 'package:policy_dukaan/views/tab_screen.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/session_manager.dart';
@@ -191,7 +192,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              const WelcomeCard(),
+              Padding(
+                padding: const EdgeInsets.only(left: 15,right: 15),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Dashboard Overview",
+                    style:  TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.primary
+                    ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 16),
               StatisticsGrid(
                 totalPolicies: totalPolicies,
@@ -884,16 +899,14 @@ class QuickActionsSection extends StatelessWidget {
                 label: 'Add Lead',
                 color: AppColors.teal,
               ),
-              const QuickActionButton(
+               QuickActionButton(onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => RenewalsScreen(),));
+              },
                 icon: Icons.refresh,
                 label: 'Renewals',
                 color: AppColors.orange,
               ),
-              const QuickActionButton(
-                icon: Icons.description,
-                label: 'Reports',
-                color: AppColors.secondary,
-              ),
+
             ],
           ),
         ],

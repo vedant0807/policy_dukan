@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:policy_dukaan/api_service.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/widgets/primary_button.dart';
@@ -15,7 +16,10 @@ class MyProfile extends StatefulWidget {
 }
 
 class _MyProfileState extends State<MyProfile> {
+
+  final ApiService _apiService = ApiService();
   final SessionManager _sessionManager = SessionManager();
+  bool _isSaving = false;
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -28,6 +32,14 @@ class _MyProfileState extends State<MyProfile> {
   void initState() {
     super.initState();
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _mobileController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -47,11 +59,74 @@ class _MyProfileState extends State<MyProfile> {
     }
   }
 
+  Future<void> _saveProfile() async {
+    // Validation
+    if (_nameController.text.trim().isEmpty) {
+      _showSnackBar('Please enter your name', Colors.red);
+      return;
+    }
+
+    if (_emailController.text.trim().isEmpty) {
+      _showSnackBar('Please enter your email', Colors.red);
+      return;
+    }
+
+    if (_mobileController.text.trim().isEmpty) {
+      _showSnackBar('Please enter your mobile number', Colors.red);
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final response = await _apiService.updateProfile(
+        name: _nameController.text,
+        email: _emailController.text,
+        mobileNumber: _mobileController.text,
+      );
+
+      if (response['success'] == true) {
+        // Update session data
+        await _sessionManager.saveUserData({
+          "name": _nameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "mobileNumber": _mobileController.text.trim(),
+        });
+
+        setState(() {
+          _initials = _getInitials(_nameController.text);
+        });
+
+        _showSnackBar('Profile updated successfully', Colors.green);
+      } else {
+        _showSnackBar(
+          response['message'] ?? 'Failed to update profile',
+          Colors.red,
+        );
+      }
+    } catch (e) {
+      _showSnackBar('Error: $e', Colors.red);
+    } finally {
+      setState(() => _isSaving = false);
+    }
+  }
+
+  void _showSnackBar(String message, Color backgroundColor) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   String _getInitials(String name) {
     final parts = name.trim().split(' ');
-    if (parts.isEmpty) return '';
+    if (parts.isEmpty || parts[0].isEmpty) return '';
     if (parts.length == 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[1][0]).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
 
   @override
@@ -60,7 +135,8 @@ class _MyProfileState extends State<MyProfile> {
       backgroundColor: AppColors.background,
       appBar: const CustomAppBar(
         title: "My Profile",
-        showBackButton: true,centerTitle: true,
+        showBackButton: true,
+        centerTitle: true,
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -91,7 +167,7 @@ class _MyProfileState extends State<MyProfile> {
           ),
           alignment: Alignment.center,
           child: Text(
-            _initials,
+            _initials.isNotEmpty ? _initials : '?',
             style: const TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w700,
@@ -101,7 +177,9 @@ class _MyProfileState extends State<MyProfile> {
         ),
         const SizedBox(height: 12),
         Text(
-          _nameController.text,
+          _nameController.text.isNotEmpty
+              ? _nameController.text
+              : 'User Name',
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -109,7 +187,9 @@ class _MyProfileState extends State<MyProfile> {
         ),
         const SizedBox(height: 4),
         Text(
-          _emailController.text,
+          _emailController.text.isNotEmpty
+              ? _emailController.text
+              : 'email@example.com',
           style: const TextStyle(
             fontSize: 14,
             color: Colors.grey,
@@ -178,10 +258,10 @@ class _MyProfileState extends State<MyProfile> {
 
           const SizedBox(height: 24),
 
-          PrimaryButton(label: "Save Changes", onPressed: () {
-
-          },)
-
+          PrimaryButton(
+            label: _isSaving ? "Saving..." : "Save Changes",
+            onPressed: _isSaving ? null : _saveProfile,
+          ),
         ],
       ),
     );

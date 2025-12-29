@@ -20,6 +20,8 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
 
   bool _isLoading = true;
   List<dynamic> _policies = [];
+  List<dynamic> _filteredPolicies = [];
+
   String? _errorMessage;
   int selectedIndex = 0;
   bool _isImporting = false;
@@ -132,6 +134,8 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
     if (result['success'] == true) {
       setState(() {
         _policies = result['data'] ?? [];
+        _filteredPolicies = List.from(_policies); // ✅ IMPORTANT
+
         _isLoading = false;
       });
     } else {
@@ -141,6 +145,40 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
       });
     }
   }
+
+  void _onSearchChanged(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredPolicies = List.from(_policies);
+      });
+      return;
+    }
+
+    final lowerQuery = query.toLowerCase();
+
+    setState(() {
+      _filteredPolicies = _policies.where((policy) {
+        final policyNumber =
+        (policy['policy_number'] ?? '').toString().toLowerCase();
+
+        final customerName =
+        '${policy['customer_first_name'] ?? ''} ${policy['customer_last_name'] ?? ''}'
+            .toLowerCase();
+
+        final policyType =
+        (policy['policy_type'] ?? '').toString().toLowerCase();
+
+        final status =
+        (policy['status'] ?? '').toString().toLowerCase();
+
+        return policyNumber.contains(lowerQuery) ||
+            customerName.contains(lowerQuery) ||
+            policyType.contains(lowerQuery) ||
+            status.contains(lowerQuery);
+      }).toList();
+    });
+  }
+
 
   Future<void> _onBulkImportClick() async {
     try {
@@ -535,7 +573,8 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatCard('Total', _policies.length.toString(),
+                _buildStatCard('Total', _filteredPolicies.length
+                    .toString(),
                     Colors.white, Colors.black87),
                 _buildStatCard('Active', _countByStatus('Active').toString(),
                     AppColors.card1, AppColors.success),
@@ -553,13 +592,15 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
             child: CustomSearchBar(
               controller: _searchController,
               hintText: 'Search policy',
-              onChanged: (value) {
-                debugPrint('Searching: $value');
-              },
+              onChanged: _onSearchChanged,
               onClear: () {
-                debugPrint('Search cleared');
+                _searchController.clear();
+                setState(() {
+                  _filteredPolicies = List.from(_policies);
+                });
               },
             ),
+
           ),
 
           // ✅ Action Buttons Row
@@ -703,7 +744,8 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
       );
     }
 
-    if (_policies.isEmpty) {
+    if (_filteredPolicies.isEmpty)
+    {
       return const Center(
         child: Text('No policies found'),
       );
@@ -711,9 +753,9 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _policies.length,
+      itemCount: _filteredPolicies.length,
         itemBuilder: (context, index) {
-          final policy = _policies[index];
+          final policy = _filteredPolicies[index];
           final policyId = policy['id']?.toString() ?? '';  // ✅ FIXED: Use 'id' instead of '_id'
           final isSelected = _selectedPolicyIds.contains(policyId);
 
@@ -833,7 +875,7 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
   }
 
   int _countByStatus(String status) {
-    return _policies
+    return _filteredPolicies
         .where((p) =>
     (p['status'] ?? '').toString().toLowerCase() ==
         status.toLowerCase())

@@ -5,6 +5,9 @@ import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/api_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:policy_dukaan/widgets/primary_button.dart';
+
+import 'my_policies.dart';
 
 class AddPolicyScreen extends StatefulWidget {
   const AddPolicyScreen({Key? key}) : super(key: key);
@@ -383,11 +386,19 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
       );
 
       if (response['success'] == true) {
-        _showSuccessSnackBar(response['message']?.toString() ?? 'Policy added successfully!');
-        _clearForm();
-        // Optional: Navigate back or to policy list
-        // Navigator.pop(context);
-      } else {
+        _showSuccessSnackBar(
+          response['message']?.toString() ?? 'Policy added successfully!',
+        );
+
+        if (!mounted) return;
+
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const PoliciesScreen()),
+              (route) => false,
+        );
+      }
+      else {
         _showErrorSnackBar(response['message']?.toString() ?? 'Failed to add policy');
       }
     } catch (e) {
@@ -844,37 +855,38 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
               const SizedBox(height: 24),
 
               // Submit Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitForm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                      : const Text(
-                    'Submit',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
+              PrimaryButton(label: "Submit", onPressed:  _isSubmitting ? null : _submitForm,),
+              // SizedBox(
+              //   width: double.infinity,
+              //   child: ElevatedButton(
+              //     onPressed: _isSubmitting ? null : _submitForm,
+              //     style: ElevatedButton.styleFrom(
+              //       backgroundColor: AppColors.primary,
+              //       disabledBackgroundColor: AppColors.primary.withOpacity(0.6),
+              //       padding: const EdgeInsets.symmetric(vertical: 16),
+              //       shape: RoundedRectangleBorder(
+              //         borderRadius: BorderRadius.circular(12),
+              //       ),
+              //     ),
+              //     child: _isSubmitting
+              //         ? const SizedBox(
+              //       width: 20,
+              //       height: 20,
+              //       child: CircularProgressIndicator(
+              //         strokeWidth: 2,
+              //         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              //       ),
+              //     )
+              //         : const Text(
+              //       'Submit',
+              //       style: TextStyle(
+              //         fontSize: 16,
+              //         fontWeight: FontWeight.bold,
+              //         color: Colors.white,
+              //       ),
+              //     ),
+              //   ),
+              // ),
 
               const SizedBox(height: 80),
             ],
