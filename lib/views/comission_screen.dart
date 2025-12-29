@@ -271,16 +271,15 @@ class _CommissionsScreenState extends State<CommissionsScreen> {
             ),
           ]),
         ]),
-        const SizedBox(height: 16),
-        Row(children: [
-          Expanded(child: _buildDetailItem('Company:', company)),
-          Expanded(child: _buildDetailItem('Premium:', premium)),
-        ]),
-        const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: _buildDetailItem('Commission Rate:', commissionRate)),
-          Expanded(child: _buildDetailItem('Date:', date)),
-        ]),
+        const SizedBox(height: 4),
+        _buildDetailItem('Company:', company),
+        const SizedBox(height: 4),
+        _buildDetailItem('Premium:', premium),
+        const SizedBox(height: 4),
+        _buildDetailItem('Commission Rate:', commissionRate),
+        const SizedBox(height: 4),
+        _buildDetailItem('Date:', date)
+
       ]),
     );
   }

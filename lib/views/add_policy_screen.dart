@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/api_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 class AddPolicyScreen extends StatefulWidget {
   const AddPolicyScreen({Key? key}) : super(key: key);
@@ -14,7 +17,16 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
   bool _isSubmitting = false;
+  int selectedIndex = 0;
+  bool _isImporting = false;
+  bool _isExporting = false;
 
+
+  final List<_ButtonData> buttons = [
+    _ButtonData("Bulk Import", Icons.upload),
+    _ButtonData("Sample CSV", Icons.description),
+    _ButtonData("Export All", Icons.download),
+  ];
   // Controllers for all form fields
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
@@ -58,6 +70,85 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
   String? _selectedCompany;
   bool _isCompanyLoading = false;
 
+  void _showImportResultDialog({
+    required bool success,
+    required String title,
+    required String message,
+    required int inserted,
+    required int total,
+    required int skipped,
+    Map<String, dynamic>? skipReasons,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(backgroundColor: Colors.white,
+          title: Row(
+            children: [
+              Icon(
+                success ? Icons.check_circle : Icons.error,
+                color: success ? Colors.green : Colors.red,
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 20),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildStatRow('Total Records', total.toString()),
+              _buildStatRow('Imported', inserted.toString(), Colors.green),
+              if (skipped > 0)
+                _buildStatRow('Skipped', skipped.toString(), Colors.orange),
+              if (skipReasons != null && skipReasons.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Skip Reasons:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...skipReasons.entries.map((entry) {
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 8, bottom: 4),
+                    child: Text(
+                      '• ${entry.key}: ${entry.value}',
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  );
+                }).toList(),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Optionally reload the policies list
+                // You can call a refresh method here if needed
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   bool get _shouldShowVehicleInfo {
     if (_selectedPolicyType == null) return false;
@@ -86,6 +177,132 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
     _fetchCompanies();
   }
 
+  Future<void> _onSampleCSVClick() async {
+    try {
+      setState(() {
+        _isExporting = true;
+      });
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Generating sample CSV...'),
+                SizedBox(height: 8),
+                Text(
+                  'Please wait',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      final response = await _apiService.downloadSampleExcel();
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      setState(() {
+        _isExporting = false;
+      });
+
+      if (response['success'] == true && response['filePath'] != null) {
+        _showSuccessSnackBar(
+          'Sample CSV template downloaded: ${response['fileName']}',
+        );
+      } else {
+        _showErrorSnackBar(
+          response['message'] ?? 'Failed to download sample CSV',
+        );
+      }
+    } catch (e) {
+      debugPrint('Sample CSV error: $e');
+
+      if (mounted && _isExporting) {
+        Navigator.of(context).pop();
+      }
+
+      setState(() {
+        _isExporting = false;
+      });
+
+      _showErrorSnackBar('Failed to download sample: ${e.toString()}');
+    }
+  }
+
+  Future<void> _onExportClick() async {
+    try {
+      setState(() {
+        _isExporting = true;
+      });
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Exporting policies...'),
+                SizedBox(height: 8),
+                Text(
+                  'Please wait while we prepare your file',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      final response = await _apiService.exportPolicies();
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      setState(() {
+        _isExporting = false;
+      });
+
+      if (response['success'] == true && response['filePath'] != null) {
+        _showSuccessSnackBar(
+          'File downloaded to Downloads folder: ${response['fileName']}',
+        );
+      } else {
+        _showErrorSnackBar(
+          response['message'] ?? 'Failed to export policies',
+        );
+      }
+    } catch (e) {
+      debugPrint('Export error: $e');
+
+      if (mounted && _isExporting) {
+        Navigator.of(context).pop();
+      }
+
+      setState(() {
+        _isExporting = false;
+      });
+
+      _showErrorSnackBar('Failed to export: ${e.toString()}');
+    }
+  }
+
+
+
   Future<void> _fetchCompanies() async {
     setState(() {
       _isCompanyLoading = true;
@@ -105,8 +322,6 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
       _isCompanyLoading = false;
     });
   }
-
-
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
@@ -302,6 +517,98 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
     }
   }
 
+  Future<void> _onBulkImportClick() async {
+    try {
+      // Show file picker
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['xls', 'xlsx', 'csv'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        File file = File(result.files.single.path!);
+
+        debugPrint('Selected file: ${file.path}');
+
+        // Show loading state
+        setState(() {
+          _isImporting = true;
+        });
+
+        // Show loading dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const AlertDialog(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Importing policies...'),
+                  SizedBox(height: 8),
+                  Text(
+                    'Please wait while we process your file',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
+        // Call the API
+        final response = await _apiService.bulkImportPolicies(file);
+
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+
+        setState(() {
+          _isImporting = false;
+        });
+
+        // Show result
+        if (response['success'] == true) {
+          final inserted = response['inserted'] ?? 0;
+          final total = response['total'] ?? 0;
+          final skipped = response['skippedInFile'] ?? 0;
+
+          // Show success dialog with details
+          _showImportResultDialog(
+            success: true,
+            title: 'Import Successful',
+            message: response['message'] ?? 'Import completed',
+            inserted: inserted,
+            total: total,
+            skipped: skipped,
+            skipReasons: response['skipReasons'],
+          );
+        } else {
+          _showErrorSnackBar(
+            response['message'] ?? 'Failed to import policies',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Bulk import error: $e');
+
+      // Close loading dialog if open
+      if (mounted && _isImporting) {
+        Navigator.of(context).pop();
+      }
+
+      setState(() {
+        _isImporting = false;
+      });
+
+      _showErrorSnackBar('Failed to import: ${e.toString()}');
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -326,11 +633,78 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
                   color: AppColors.primary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               const Text(
                 'Complete your insurance policy application with ease.',
                 style: TextStyle(fontSize: 14, color: Colors.grey),
               ),
+              const SizedBox(height: 10),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(buttons.length, (index) {
+                  final isSelected = selectedIndex == index;
+
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () {
+                      setState(() {
+                        selectedIndex = index;
+                      });
+
+                      if (index == 0) {
+                        // ✅ BULK IMPORT
+                        _onBulkImportClick();
+                      } else if (index == 1) {
+                        // Sample CSV
+                        _onSampleCSVClick();
+                      } else if (index == 2) {
+                        // Export All
+                        _onExportClick();
+                      }
+                    },
+
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ?  AppColors.primary// 🔵 Blue selected
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primaryVariant
+                              : const Color(0xFFE5E7EB),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            buttons[index].icon,
+                            size: 14,
+                            color:
+                            isSelected ? Colors.white : Colors.black87,
+                          ),
+                          Text(
+                            buttons[index].label,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+
               const SizedBox(height: 20),
 
               // Customer Information
@@ -743,6 +1117,38 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
 
 }
 
+class _ButtonData {
+  final String label;
+  final IconData icon;
+
+  _ButtonData(this.label, this.icon);
+}
 
 
 
+
+Widget _buildStatRow(String label, String value, [Color? valueColor]) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Colors.black87,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: valueColor ?? Colors.black87,
+          ),
+        ),
+      ],
+    ),
+  );
+}

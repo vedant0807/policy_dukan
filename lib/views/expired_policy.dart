@@ -1,108 +1,226 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
+import 'package:policy_dukaan/utils/app_colors.dart';
+import 'package:policy_dukaan/api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import '../utils/app_colors.dart';
+import '../widgets/custom_searchbar.dart';
 
-
-
-class ExpiredPoliciesScreen extends StatelessWidget {
+class ExpiredPoliciesScreen extends StatefulWidget {
   const ExpiredPoliciesScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ExpiredPoliciesScreen> createState() => _ExpiredPoliciesScreenState();
+}
+
+class _ExpiredPoliciesScreenState extends State<ExpiredPoliciesScreen> {
+  final ApiService _apiService = ApiService();
+  List<dynamic> _expiredPolicies = [];
+  bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExpiredPolicies();
+  }
+
+  Future<void> _loadExpiredPolicies() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final result = await _apiService.getExpiredPolicies();
+
+    if (result['success']) {
+      setState(() {
+        _expiredPolicies = result['data'] as List<dynamic>;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  int _calculateDaysExpired(String? endDate) {
+    if (endDate == null || endDate.isEmpty) return 0;
+
+    try {
+      final policyEndDate = DateTime.parse(endDate);
+      final now = DateTime.now();
+      final difference = now.difference(policyEndDate);
+      return difference.inDays > 0 ? difference.inDays : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  String _getPriorityLevel(int daysExpired) {
+    if (daysExpired <= 30) return 'High';
+    if (daysExpired <= 60) return 'Medium';
+    return 'Low';
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority) {
+      case 'High':
+        return const Color(0xFFFFE5E5);
+      case 'Medium':
+        return const Color(0xFFFFF8E5);
+      case 'Low':
+        return const Color(0xFFE5F0FF);
+      default:
+        return const Color(0xFFE5F0FF);
+    }
+  }
+
+  Color _getPriorityTextColor(String priority) {
+    switch (priority) {
+      case 'High':
+        return const Color(0xFFE63946);
+      case 'Medium':
+        return const Color(0xFFFFA500);
+      case 'Low':
+        return const Color(0xFF4A90E2);
+      default:
+        return const Color(0xFF4A90E2);
+    }
+  }
+
+  String _formatAmount(dynamic amount) {
+    if (amount == null) return '₹0';
+    if (amount is String) {
+      final num = double.tryParse(amount) ?? 0;
+      return '₹${(num / 1000).toStringAsFixed(1)}K';
+    }
+    if (amount is num) {
+      return '₹${(amount / 1000).toStringAsFixed(1)}K';
+    }
+    return '₹0';
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch phone dialer')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: "Expired Policies",centerTitle: true,showBackButton: true,),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE63946), Color(0xFFE91E8C)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+      backgroundColor: AppColors.background,
+      appBar: CustomAppBar(
+        title: "Expired Policies",
+        centerTitle: true,
+        showBackButton: true,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+        onRefresh: _loadExpiredPolicies,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Summary Card
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFE63946), Color(0xFFE91E8C)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
                     ),
-                    borderRadius: BorderRadius.circular(16),
+                    child: const Icon(
+                      Icons.warning_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
-                  child: Row(
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.warning_rounded,
+                      Text(
+                        '${_expiredPolicies.length}',
+                        style: const TextStyle(
                           color: Colors.white,
-                          size: 28,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '78',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Expired Policies',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'Expired Policies',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                _buildPolicyCard(
-                  name: 'David Wilson',
-                  policyNumber: 'POL045',
-                  type: 'Health',
-                  daysExpired: 35,
-                  amount: '₹12K',
-                  priority: 'High',
-                  priorityColor: const Color(0xFFFFE5E5),
-                  priorityTextColor: const Color(0xFFE63946),
-                ),
-                const SizedBox(height: 12),
-                _buildPolicyCard(
-                  name: 'Emma Johnson',
-                  policyNumber: 'POL032',
-                  type: 'Car',
-                  daysExpired: 50,
-                  amount: '₹9.5K',
-                  priority: 'Medium',
-                  priorityColor: const Color(0xFFFFF8E5),
-                  priorityTextColor: const Color(0xFFFFA500),
-                ),
-                const SizedBox(height: 12),
-                _buildPolicyCard(
-                  name: 'Frank Miller',
-                  policyNumber: 'POL028',
-                  type: 'Life',
-                  daysExpired: 91,
-                  amount: '₹22K',
-                  priority: 'Low',
-                  priorityColor: const Color(0xFFE5F0FF),
-                  priorityTextColor: const Color(0xFF4A90E2),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            CustomSearchBar(
+              controller: _searchController,
+              hintText: 'Search customers',
+              onChanged: (value) {
+                debugPrint('Searching: $value');
+                // TODO: filter your list here
+              },
+              onClear: () {
+                debugPrint('Search cleared');
+              },
+            ),
+
+
+            // Policy Cards
+            ..._expiredPolicies.map((policy) {
+              final daysExpired = _calculateDaysExpired(policy['policy_end_date']);
+              final priority = _getPriorityLevel(daysExpired);
+
+              return Column(
+                children: [
+                  _buildPolicyCard(
+                    name: '${policy['customer_first_name'] ?? ''} ${policy['customer_last_name'] ?? ''}'.trim(),
+                    policyNumber: policy['policy_number'] ?? 'N/A',
+                    type: policy['policy_type'] ?? 'General',
+                    daysExpired: daysExpired,
+                    amount: _formatAmount(policy['premium_with_gst']),
+                    priority: priority,
+                    priorityColor: _getPriorityColor(priority),
+                    priorityTextColor: _getPriorityTextColor(priority),
+                    phoneNumber: policy['mobile'] ?? '',
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              );
+            }).toList(),
+          ],
+        ),
       ),
     );
   }
@@ -116,6 +234,7 @@ class ExpiredPoliciesScreen extends StatelessWidget {
     required String priority,
     required Color priorityColor,
     required Color priorityTextColor,
+    required String phoneNumber,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -136,12 +255,15 @@ class ExpiredPoliciesScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  name,
-                  style:  TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textColor1
+                Expanded(
+                  child: Text(
+                    name.isEmpty ? 'Unknown Customer' : name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textColor1,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 Container(
@@ -192,31 +314,35 @@ class ExpiredPoliciesScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8F8F5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.phone_outlined,
-                    color: Color(0xFF00BFA5),
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Contact',
-                    style: TextStyle(
+            InkWell(
+              onTap: phoneNumber.isNotEmpty ? () => _makePhoneCall(phoneNumber) : null,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F8F5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.phone_outlined,
                       color: Color(0xFF00BFA5),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      size: 20,
                     ),
-                  ),
-                ],
+                    SizedBox(width: 8),
+                    Text(
+                      'Contact',
+                      style: TextStyle(
+                        color: Color(0xFF00BFA5),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -224,5 +350,4 @@ class ExpiredPoliciesScreen extends StatelessWidget {
       ),
     );
   }
-
 }

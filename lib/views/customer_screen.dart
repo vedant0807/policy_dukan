@@ -3,6 +3,7 @@ import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/widgets/primary_button.dart';
 import '../api_service.dart';
 import '../utils/app_colors.dart';
+import '../widgets/custom_searchbar.dart';
 import '../widgets/primary_text_field.dart';
 
 class CustomersScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
   final ApiService _apiService = ApiService();
   List<dynamic> _customers = [];
   bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -151,25 +153,16 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.search, color: Colors.grey),
-                      SizedBox(width: 12),
-                      Text(
-                        'Search customers...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
+                CustomSearchBar(
+                  controller: _searchController,
+                  hintText: 'Search customers',
+                  onChanged: (value) {
+                    debugPrint('Searching: $value');
+                    // TODO: filter your list here
+                  },
+                  onClear: () {
+                    debugPrint('Search cleared');
+                  },
                 ),
                 const SizedBox(height: 16),
                 // PrimaryButton(label: "+ Add Customer", onPressed: _showAddCustomerDialog),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/views/lead_screen.dart';
+import '../session_manager.dart';
 import 'add_policy_screen.dart';
 import 'dashboard_screen.dart';
 import 'menu_screen.dart';
@@ -17,28 +18,114 @@ class TabScreen extends StatefulWidget {
 
 class _TabScreenState extends State<TabScreen> {
   late int _currentIndex;
+  final SessionManager _sessionManager = SessionManager();
+
+  List<String> _userPermissions = [];
+  String _userRole = '';
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _loadUserPermissions();
   }
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    PoliciesScreen(),
-    LeadsScreen(),
-    AddPolicyScreen(),
-    MenuScreen(),
-  ];
+  Future<void> _loadUserPermissions() async {
+    final permissions = await _sessionManager.getUserPermissions();
+    final role = await _sessionManager.getUserRole();
 
-  final List<Map<String, dynamic>> _navItems = [
-    {'icon': Icons.dashboard, 'label': 'Home'},
-    {'icon': Icons.folder, 'label': 'Policies'},
-    {'icon': Icons.people, 'label': 'Leads'},
-    {'icon': Icons.description, 'label': 'Add Policy'},
-    {'icon': Icons.more_horiz, 'label': 'More'},
-  ];
+    print('📋 User Permissions: $permissions');
+    print('👤 User Role: $role');
+
+    setState(() {
+      _userPermissions = permissions;
+      _userRole = role ?? '';
+      _isLoading = false;
+    });
+  }
+
+  // ✅ Check if user has permission or is admin
+  bool _hasAccess(String permission) {
+    // Admin/Owner has access to everything
+    if (_userRole == 'admin' || _userRole == 'owner') {
+      return true;
+    }
+
+    // Staff can only access what's in their permissions
+    return _userPermissions.contains(permission);
+  }
+
+  // ✅ Build filtered screens based on permissions
+  List<Widget> get _availableScreens {
+    List<Widget> screens = [];
+
+    // Home is always visible
+    screens.add(const DashboardScreen());
+
+    // Policies - check 'policies' permission
+    if (_hasAccess('policies')) {
+      screens.add(PoliciesScreen());
+    }
+
+    // Leads - check 'leads' permission
+    if (_hasAccess('leads')) {
+      screens.add(LeadsScreen());
+    }
+
+    // Add Policy/Customers - check 'customers' permission
+    if (_hasAccess('customers')) {
+      screens.add(AddPolicyScreen());
+    }
+
+    // More is always visible
+    screens.add(const MenuScreen());
+
+    return screens;
+  }
+
+  // ✅ Build filtered nav items based on permissions
+  List<Map<String, dynamic>> get _availableNavItems {
+    List<Map<String, dynamic>> items = [];
+
+    // Home is always visible
+    items.add({
+      'icon': Icons.dashboard,
+      'label': 'Home',
+    });
+
+    // Policies - check 'policies' permission
+    if (_hasAccess('policies')) {
+      items.add({
+        'icon': Icons.folder,
+        'label': 'Policies',
+      });
+    }
+
+    // Leads - check 'leads' permission
+    if (_hasAccess('leads')) {
+      items.add({
+        'icon': Icons.people,
+        'label': 'Leads',
+      });
+    }
+
+    // Add Policy - check 'customers' permission
+    if (_hasAccess('customers')) {
+      items.add({
+        'icon': Icons.description,
+        'label': 'Add Policy',
+      });
+    }
+
+    // More is always visible
+    items.add({
+      'icon': Icons.more_horiz,
+      'label': 'More',
+    });
+
+    return items;
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -48,8 +135,19 @@ class _TabScreenState extends State<TabScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final screens = _availableScreens;
+    final navItems = _availableNavItems;
+
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: screens[_currentIndex],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -66,8 +164,8 @@ class _TabScreenState extends State<TabScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(_navItems.length, (index) {
-                final item = _navItems[index];
+              children: List.generate(navItems.length, (index) {
+                final item = navItems[index];
                 final bool isActive = _currentIndex == index;
 
                 return Expanded(

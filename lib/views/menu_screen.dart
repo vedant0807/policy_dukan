@@ -4,9 +4,7 @@ import 'package:policy_dukaan/views/customer_screen.dart';
 import 'package:policy_dukaan/views/login_screen.dart';
 import 'package:policy_dukaan/views/plans_page.dart';
 import 'package:policy_dukaan/views/renewal_screen.dart';
-import 'package:policy_dukaan/views/report_screen.dart';
 import 'package:policy_dukaan/views/staff_management.dart';
-import 'package:policy_dukaan/views/tab_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../session_manager.dart';
@@ -24,12 +22,13 @@ class MenuScreen extends StatefulWidget {
 }
 
 class _MenuScreenState extends State<MenuScreen> {
-
   final SessionManager _sessionManager = SessionManager();
 
   String _userName = '';
   String _userEmail = '';
   String _initials = '';
+  List<String> _userPermissions = [];
+  String _userRole = '';
 
   @override
   void initState() {
@@ -39,6 +38,11 @@ class _MenuScreenState extends State<MenuScreen> {
 
   Future<void> _loadUserData() async {
     final user = await _sessionManager.getUserData();
+    final permissions = await _sessionManager.getUserPermissions();
+    final role = await _sessionManager.getUserRole();
+
+    print('📋 Menu - User Permissions: $permissions');
+    print('👤 Menu - User Role: $role');
 
     if (user != null) {
       final name = user['name'] ?? '';
@@ -46,6 +50,8 @@ class _MenuScreenState extends State<MenuScreen> {
         _userName = name;
         _userEmail = user['email'] ?? '';
         _initials = _getInitials(name);
+        _userPermissions = permissions;
+        _userRole = role ?? '';
       });
     }
   }
@@ -55,6 +61,17 @@ class _MenuScreenState extends State<MenuScreen> {
     if (parts.isEmpty) return '';
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+
+  // ✅ Check if user has permission or is admin
+  bool _hasAccess(String permission) {
+    // Admin/Owner has access to everything
+    if (_userRole == 'admin' || _userRole == 'owner') {
+      return true;
+    }
+
+    // Staff can only access what's in their permissions
+    return _userPermissions.contains(permission);
   }
 
   @override
@@ -73,76 +90,140 @@ class _MenuScreenState extends State<MenuScreen> {
           children: [
             _buildProfileCard(),
             const SizedBox(height: 20),
-            _Section(
-              title: "Policy Management",
-              children:  [
-                _OptionTile(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => CustomersScreen(),));
-                  },
-                  icon: Icons.people_alt_outlined,
-                  title: "Customers",
-                  color: AppColors.primary,
-                  background: AppColors.card1,
-                ),
-                _OptionTile(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => ExpiredPoliciesScreen(),));
-                  },
-                  icon: Icons.event_busy_outlined,
-                  title: "Expired Policies",
-                  color: AppColors.error,
-                  background: AppColors.card3,
-                ),
-                _OptionTile(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => RenewalsScreen(),));
-                  },
-                  icon: Icons.autorenew_outlined,
-                  title: "Renewals",
-                  color: AppColors.orange,
-                  background: AppColors.card2,
-                ),
-                _OptionTile(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => AddCompanyScreen(),));
-                  },
-                  icon: Icons.work,
-                  title: "Company",
-                  color: AppColors.primary,
-                  background: AppColors.card1,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _Section(
-              title: "Finance",
-              children:  [
-                _OptionTile(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => CommissionsScreen(),));
-                  },
-                  icon: Icons.payments_outlined,
-                  title: "Commissions",
-                  color: AppColors.primary,
-                ),
-                _OptionTile(onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => PlansScreen(),));
-                },
-                  icon: Icons.unsubscribe_outlined,
-                  title: "Plans",
-                  color: AppColors.secondary,
-                ),
-                _OptionTile(onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => StaffManagement(),));
-                },
-                  icon: Icons.people_alt_rounded,
-                  title: "Staff Management",
-                  color: AppColors.error,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+
+            // ✅ Policy Management Section
+            if (_hasAccess('policies') || _hasAccess('customers'))
+              Column(
+                children: [
+                  _Section(
+                    title: "Policy Management",
+                    children: [
+                      // Customers - only if has 'customers' permission
+                      if (_hasAccess('customers'))
+                        _OptionTile(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CustomersScreen(),
+                              ),
+                            );
+                          },
+                          icon: Icons.people_alt_outlined,
+                          title: "Customers",
+                          color: AppColors.primary,
+                          background: AppColors.card1,
+                        ),
+
+                      // Expired Policies - only if has 'policies' permission
+                      if (_hasAccess('policies'))
+                        _OptionTile(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ExpiredPoliciesScreen(),
+                              ),
+                            );
+                          },
+                          icon: Icons.event_busy_outlined,
+                          title: "Expired Policies",
+                          color: AppColors.error,
+                          background: AppColors.card3,
+                        ),
+
+                      // Renewals - only if has 'policies' permission
+                      if (_hasAccess('policies'))
+                        _OptionTile(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RenewalsScreen(),
+                              ),
+                            );
+                          },
+                          icon: Icons.autorenew_outlined,
+                          title: "Renewals",
+                          color: AppColors.orange,
+                          background: AppColors.card2,
+                        ),
+
+                      // Company - only for admin/owner
+                      if (_userRole == 'admin' || _userRole == 'owner')
+                        _OptionTile(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => AddCompanyScreen(),
+                              ),
+                            );
+                          },
+                          icon: Icons.work,
+                          title: "Company",
+                          color: AppColors.primary,
+                          background: AppColors.card1,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+
+            // ✅ Finance Section - only for admin/owner
+            if (_userRole == 'admin' || _userRole == 'owner')
+              Column(
+                children: [
+                  _Section(
+                    title: "Finance",
+                    children: [
+                      _OptionTile(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CommissionsScreen(),
+                            ),
+                          );
+                        },
+                        icon: Icons.payments_outlined,
+                        title: "Commissions",
+                        color: AppColors.primary,
+                      ),
+                      _OptionTile(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlansScreen(),
+                            ),
+                          );
+                        },
+                        icon: Icons.unsubscribe_outlined,
+                        title: "Plans",
+                        color: AppColors.secondary,
+                      ),
+                      _OptionTile(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => StaffManagement(),
+                            ),
+                          );
+                        },
+                        icon: Icons.people_alt_rounded,
+                        title: "Staff Management",
+                        color: AppColors.error,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+
+            // Settings Section (available to all)
             _Section(
               title: "Settings",
               children: const [
@@ -239,6 +320,7 @@ class _MenuScreenState extends State<MenuScreen> {
   }
 }
 
+// Rest of the widget classes remain the same
 class _Section extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -353,8 +435,8 @@ class _LogoutTile extends StatelessWidget {
   const _LogoutTile();
 
   Future<void> _logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    final SessionManager sessionManager = SessionManager();
+    await sessionManager.clearSession();
 
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -368,7 +450,8 @@ class _LogoutTile extends StatelessWidget {
       onTap: () {
         showDialog(
           context: context,
-          builder: (_) => AlertDialog(backgroundColor: Colors.white,
+          builder: (_) => AlertDialog(
+            backgroundColor: Colors.white,
             title: const Text("Logout"),
             content: const Text("Are you sure you want to logout?"),
             actions: [

@@ -11,7 +11,7 @@ class MoreScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: const CustomAppBar(
-        title: "More",
+        title: "",
         centerTitle: false,
         showNotificationIcon: false,
       ),

@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:excel/excel.dart';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:policy_dukaan/session_manager.dart';
 
 class ApiService {
@@ -947,5 +950,408 @@ class ApiService {
       };
     }
   }
+
+  Future<Map<String, dynamic>?> fetchCurrentPlan(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/subscriptions'),
+        headers: {'Cookie': 'auth_token=$token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data;
+      }
+      return null;
+    } catch (e) {
+      throw Exception('Error fetching plan: $e');
+    }
+  }
+
+  /// Create Razorpay order
+  Future<String?> createRazorpayOrder(String token, int amount) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/razorpay/order'),
+        headers: {
+          'Cookie': 'auth_token=$token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({'amount': amount}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+        return data['id'];
+      }
+      throw Exception('Failed to create order: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Error creating Razorpay order: $e');
+    }
+  }
+
+  /// Create invoice
+  Future<void> createInvoice(
+      String token, {
+        required String planId,
+        required String name,
+        required String email,
+        required String mobileNumber,
+        required String address,
+        required String gstNumber,
+        required String state,
+      }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/invoices'),
+        headers: {
+          'Cookie': 'auth_token=$token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'planId': planId,
+          'name': name,
+          'email': email,
+          'mobileNumber': mobileNumber,
+          'address': address,
+          'gstNumber': gstNumber,
+          'state': state,
+        }),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Failed to create invoice: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error creating invoice: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> bulkImportPolicies(File file) async {
+    final url = Uri.parse('$baseUrl/policies/import');
+
+    print('📤 BulkImportPolicies Request URL: $url');
+    print('📤 File path: ${file.path}');
+
+    try {
+      final headers = await _getHeaders();
+
+      // Remove Content-Type from headers as multipart will set it automatically
+      headers.remove('Content-Type');
+
+      // Create multipart request
+      var request = http.MultipartRequest('POST', url);
+
+      // Add headers (Cookie for auth)
+      request.headers.addAll(headers);
+
+      // Add file to request
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file', // This is the field name expected by the backend
+          file.path,
+        ),
+      );
+
+      print('📤 Sending multipart request...');
+
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📥 BulkImportPolicies Response Status: ${response.statusCode}');
+      print('📥 BulkImportPolicies Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+        return {
+          'success': true,
+          'data': responseBody,
+          'message': responseBody['message'] ?? 'Import completed successfully',
+          'inserted': responseBody['inserted'] ?? 0,
+          'total': responseBody['total'] ?? 0,
+          'skippedInFile': responseBody['skippedInFile'] ?? 0,
+          'skipReasons': responseBody['skipReasons'] ?? {},
+        };
+      } else {
+        final Map<String, dynamic> errorBody = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorBody['message'] ?? 'Failed to import policies',
+        };
+      }
+    } catch (e) {
+      print('❌ BulkImportPolicies Error: $e');
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> getExpiredPolicies() async {
+    final url = Uri.parse('$baseUrl/policies/expired');
+
+    print('📤 GetExpiredPolicies Request URL: $url');
+
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      print('📥 GetExpiredPolicies Response Status: ${response.statusCode}');
+      print('📥 GetExpiredPolicies Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        List<dynamic> policiesList = [];
+        if (decoded is List) {
+          policiesList = decoded;
+        } else if (decoded is Map && decoded.containsKey('data')) {
+          policiesList = decoded['data'] is List ? decoded['data'] : [];
+        } else if (decoded is Map && decoded.containsKey('policies')) {
+          policiesList = decoded['policies'] is List ? decoded['policies'] : [];
+        }
+
+        return {
+          'success': true,
+          'data': policiesList,
+        };
+      } else {
+        final errorBody = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorBody['message'] ?? 'Failed to fetch expired policies',
+        };
+      }
+    } catch (e) {
+      print('❌ GetExpiredPolicies Error: $e');
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> exportPolicies() async {
+    final url = Uri.parse('$baseUrl/policies/export?format=xlsx');
+
+    print('📤 ExportPolicies Request URL: $url');
+
+    try {
+      final headers = await _getHeaders();
+
+      print('📤 Sending export request...');
+
+      // Make the GET request
+      final response = await http.get(url, headers: headers);
+
+      print('📥 ExportPolicies Response Status: ${response.statusCode}');
+      print('📥 ExportPolicies Response Content-Type: ${response.headers['content-type']}');
+
+      if (response.statusCode == 200) {
+        // Get the appropriate directory based on platform
+        Directory? directory;
+        String directoryPath;
+
+        if (Platform.isAndroid) {
+          // For Android, try to use the Downloads directory
+          // This works without needing storage permissions on Android 10+
+          final downloadsDir = Directory('/storage/emulated/0/Download');
+
+          if (await downloadsDir.exists()) {
+            directory = downloadsDir;
+            directoryPath = downloadsDir.path;
+          } else {
+            // Fallback to app's external storage
+            directory = await getExternalStorageDirectory();
+            directoryPath = directory?.path ?? '';
+          }
+        } else if (Platform.isIOS) {
+          // For iOS, use application documents directory
+          directory = await getApplicationDocumentsDirectory();
+          directoryPath = directory.path;
+        } else {
+          return {
+            'success': false,
+            'message': 'Unsupported platform',
+          };
+        }
+
+        if (directoryPath.isEmpty) {
+          return {
+            'success': false,
+            'message': 'Could not access storage directory',
+          };
+        }
+
+        // Create filename with timestamp
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final fileName = 'policies_export_$timestamp.xlsx';
+        final filePath = '$directoryPath/$fileName';
+
+        print('💾 Saving file to: $filePath');
+
+        // Write the file
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+
+        // Verify file was created
+        final fileExists = await file.exists();
+        final fileSize = await file.length();
+
+        print('✅ File saved successfully');
+        print('📊 File exists: $fileExists, Size: $fileSize bytes');
+
+        return {
+          'success': true,
+          'message': 'File downloaded successfully',
+          'filePath': filePath,
+          'fileName': fileName,
+        };
+      } else {
+        print('❌ Export failed with status: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Failed to export: ${response.statusCode} - ${response.reasonPhrase}',
+        };
+      }
+    } catch (e) {
+      print('❌ ExportPolicies Error: $e');
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> downloadSampleExcel() async {
+    try {
+      // Create Excel
+      final excel = Excel.createExcel();
+      final Sheet sheet = excel['Sample'];
+      excel.setDefaultSheet('Sample');
+
+      // Headers (EXACT backend match)
+      final headers = [
+        'customer_first_name',
+        'customer_last_name',
+        'mobile',
+        'email',
+        'date_of_birth',
+        'policy_number',
+        'policy_type',
+        'policy_start_date',
+        'policy_end_date',
+        'premium_with_gst',
+        'agent_name',
+        'customer_group',
+        'customer_remark',
+        'month_term',
+        'od_amount',
+        'fresh_renewal',
+        'payment_mode',
+        'year_of_booking',
+        'this_year_premium',
+        'last_year_premium',
+        'current_insurance_company',
+        'previous_insurance_company',
+        'policy_remark',
+        'vehicle_number',
+        'vehicle_model',
+        'fuel_type',
+        'vehicle_type',
+        'make',
+        'vehicle_remark',
+        'nominee_name',
+        'nominee_relation',
+        'additional_remark',
+      ];
+
+      sheet.appendRow(
+        headers.map((e) => TextCellValue(e)).toList(),
+      );
+      // Save location
+      Directory directory = Directory('/storage/emulated/0/Download');
+
+      final fileName = 'policies_sample_template.xlsx';
+      final filePath = '${directory.path}/$fileName';
+
+      // Encode Excel
+      final List<int>? bytes = excel.encode();
+      if (bytes == null) {
+        return {
+          'success': false,
+          'message': 'Failed to generate Excel file',
+        };
+      }
+
+      // Write as BYTES (IMPORTANT)
+      final file = File(filePath);
+      await file.writeAsBytes(bytes, flush: true);
+
+      return {
+        'success': true,
+        'filePath': filePath,
+        'fileName': fileName,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> bulkDeletePolicies(List<String> policyIds) async {
+    final url = Uri.parse('$baseUrl/policies/bulk-delete');
+
+    print('📤 BulkDeletePolicies Request URL: $url');
+    print('📤 BulkDeletePolicies Payload: ${jsonEncode({"ids": policyIds})}');
+
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          "ids": policyIds,
+        }),
+      );
+
+      print('📥 BulkDeletePolicies Response Status: ${response.statusCode}');
+      print('📥 BulkDeletePolicies Response Body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        final responseBody = response.body.isNotEmpty
+            ? jsonDecode(response.body)
+            : {'message': 'Policies deleted successfully'};
+
+        return {
+          'success': true,
+          'message': responseBody['message'] ?? 'Policies deleted successfully',
+          'data': responseBody,
+        };
+      } else {
+        final errorBody = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorBody['message'] ?? 'Failed to delete policies',
+        };
+      }
+    } catch (e) {
+      print('❌ BulkDeletePolicies Error: $e');
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
+
 
 }
