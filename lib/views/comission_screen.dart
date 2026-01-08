@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import '../utils/app_colors.dart';
 
@@ -34,8 +35,12 @@ class _CommissionsScreenState extends State<CommissionsScreen> {
         commissions = response['items'] ?? [];
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response['message'] ?? 'Failed to load commissions')),
+      Fluttertoast.showToast(
+        msg: response['message'] ?? 'Failed to load commissions',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
     }
 

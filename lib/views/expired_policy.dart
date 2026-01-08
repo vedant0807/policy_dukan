@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -111,8 +112,12 @@ class _ExpiredPoliciesScreenState extends State<ExpiredPoliciesScreen> {
       await launchUrl(launchUri);
     } else {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch phone dialer')),
+        Fluttertoast.showToast(
+          msg: 'Could not launch phone dialer',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
         );
       }
     }
@@ -186,7 +191,7 @@ class _ExpiredPoliciesScreenState extends State<ExpiredPoliciesScreen> {
             const SizedBox(height: 16),
             CustomSearchBar(
               controller: _searchController,
-              hintText: 'Search customers',
+              hintText: 'Search Policies',
               onChanged: (value) {
                 debugPrint('Searching: $value');
                 // TODO: filter your list here

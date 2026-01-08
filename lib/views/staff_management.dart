@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/views/add_staff.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/api_service.dart';
 
@@ -41,11 +42,12 @@ class _StaffManagementState extends State<StaffManagement> {
           _isLoading = false;
         });
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response['message'] ?? 'Failed to fetch staff'),
-              backgroundColor: Colors.red,
-            ),
+          Fluttertoast.showToast(
+            msg: response['message'] ?? 'Failed to fetch staff',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
           );
         }
       }
@@ -54,11 +56,12 @@ class _StaffManagementState extends State<StaffManagement> {
         _isLoading = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+        Fluttertoast.showToast(
+          msg: 'Error: $e',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
         );
       }
     }
@@ -92,29 +95,32 @@ class _StaffManagementState extends State<StaffManagement> {
 
       if (mounted) {
         if (response['success']) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response['message'] ?? 'Staff deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
+          Fluttertoast.showToast(
+            msg: response['message'] ?? 'Staff deleted successfully',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
           );
           _fetchStaff(); // Refresh the list
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(response['message'] ?? 'Failed to delete staff'),
-              backgroundColor: Colors.red,
-            ),
+          Fluttertoast.showToast(
+            msg: response['message'] ?? 'Failed to delete staff',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+        Fluttertoast.showToast(
+          msg: 'Error: $e',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
         );
       }
     }

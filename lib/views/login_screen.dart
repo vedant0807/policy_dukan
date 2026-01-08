@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/views/tab_screen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/views/verify_otp.dart';
 import '../api_service.dart';
 import '../utils/app_colors.dart';
@@ -23,8 +24,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your email address')),
+      Fluttertoast.showToast(
+        msg: 'Please enter your email address',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
       );
       return;
     }
@@ -36,8 +41,12 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = false);
 
     if (result['success']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('OTP sent successfully!')),
+      Fluttertoast.showToast(
+        msg: 'OTP sent successfully!',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
       );
 
       // Navigate to Verify OTP screen, passing the email
@@ -48,8 +57,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'])),
+      Fluttertoast.showToast(
+        msg: result['message'] ?? 'Failed to send OTP',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
     }
   }
@@ -205,13 +218,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => isLoading = false);
 
     if (result['success']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signup successful')),
+      Fluttertoast.showToast(
+        msg: 'Signup successful',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
       );
       Navigator.pop(context); // Go back to login
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'])),
+      Fluttertoast.showToast(
+        msg: result['message'] ?? 'Signup failed',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
     }
   }

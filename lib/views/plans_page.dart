@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/session_manager.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import '../utils/app_colors.dart';
@@ -178,11 +179,12 @@ class _PlansScreenState extends State<PlansScreen>
       return await _apiService.createRazorpayOrder(token!, 10000);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error: ${e.toString()}'),
-              backgroundColor: AppColors.error
-          ),
+        Fluttertoast.showToast(
+          msg: 'Error: ${e.toString()}',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: AppColors.error,
+          textColor: Colors.white,
         );
       }
       return null;
@@ -204,38 +206,45 @@ class _PlansScreenState extends State<PlansScreen>
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Invoice Error: ${e.toString()}'),
-              backgroundColor: Colors.orange
-          ),
+        Fluttertoast.showToast(
+          msg: 'Invoice Error: ${e.toString()}',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
         );
       }
     }
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text('Payment Successful! ID: ${response.paymentId}'),
-          backgroundColor: AppColors.success
-      ),
+    Fluttertoast.showToast(
+      msg: 'Payment Successful! ID: ${response.paymentId}',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: AppColors.success,
+      textColor: Colors.white,
     );
     _fetchCurrentPlan();
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text('Payment Failed: ${response.message}'),
-          backgroundColor: AppColors.error
-      ),
+    Fluttertoast.showToast(
+      msg: 'Payment Failed: ${response.message}',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: AppColors.error,
+      textColor: Colors.white,
     );
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('External Wallet: ${response.walletName}')),
+    Fluttertoast.showToast(
+      msg: 'External Wallet: ${response.walletName}',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
     );
   }
 

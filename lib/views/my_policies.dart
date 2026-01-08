@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import '../api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import '../widgets/custom_searchbar.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -523,26 +524,22 @@ class _PoliciesScreenState extends State<PoliciesScreen> {
   }
 
   void _showSuccessSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-      ),
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
     );
   }
 
   void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
     );
   }
 

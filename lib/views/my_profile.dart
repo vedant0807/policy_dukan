@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/widgets/primary_button.dart';
@@ -62,17 +63,17 @@ class _MyProfileState extends State<MyProfile> {
   Future<void> _saveProfile() async {
     // Validation
     if (_nameController.text.trim().isEmpty) {
-      _showSnackBar('Please enter your name', Colors.red);
+      _showToast('Please enter your name', Colors.red);
       return;
     }
 
     if (_emailController.text.trim().isEmpty) {
-      _showSnackBar('Please enter your email', Colors.red);
+      _showToast('Please enter your email', Colors.red);
       return;
     }
 
     if (_mobileController.text.trim().isEmpty) {
-      _showSnackBar('Please enter your mobile number', Colors.red);
+      _showToast('Please enter your mobile number', Colors.red);
       return;
     }
 
@@ -97,28 +98,28 @@ class _MyProfileState extends State<MyProfile> {
           _initials = _getInitials(_nameController.text);
         });
 
-        _showSnackBar('Profile updated successfully', Colors.green);
+        _showToast('Profile updated successfully', Colors.green);
       } else {
-        _showSnackBar(
+        _showToast(
           response['message'] ?? 'Failed to update profile',
           Colors.red,
         );
       }
     } catch (e) {
-      _showSnackBar('Error: $e', Colors.red);
+      _showToast('Error: $e', Colors.red);
     } finally {
       setState(() => _isSaving = false);
     }
   }
 
-  void _showSnackBar(String message, Color backgroundColor) {
+  void _showToast(String message, Color backgroundColor) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 3),
-      ),
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: backgroundColor,
+      textColor: Colors.white,
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
 import 'package:policy_dukaan/views/add_lead.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
@@ -246,13 +247,21 @@ class _LeadsScreenState extends State<LeadsScreen> {
                 final result = await _apiService.deleteLead(lead['id']);
 
                 if (result['success']) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Lead deleted successfully')),
+                  Fluttertoast.showToast(
+                    msg: 'Lead deleted successfully',
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.green,
+                    textColor: Colors.white,
                   );
                   loadLeads(); // 🔄 refresh list
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(result['message'])),
+                  Fluttertoast.showToast(
+                    msg: result['message'] ?? 'Failed to delete lead',
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.red,
+                    textColor: Colors.white,
                   );
                 }
 

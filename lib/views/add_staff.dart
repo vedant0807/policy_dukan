@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/api_service.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/widgets/primary_button.dart';
 import 'package:policy_dukaan/widgets/primary_text_field.dart';
@@ -126,8 +127,12 @@ class _AddStaffState extends State<AddStaff> {
         emailController.text.isEmpty ||
         phoneController.text.length != 10 ||
         salaryController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill all required fields")),
+      Fluttertoast.showToast(
+        msg: "Please fill all required fields",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
       );
       return;
     }
@@ -150,13 +155,21 @@ class _AddStaffState extends State<AddStaff> {
     setState(() => isLoading = false);
 
     if (result['success']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Staff added successfully")),
+      Fluttertoast.showToast(
+        msg: "Staff added successfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
       );
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result['message'])),
+      Fluttertoast.showToast(
+        msg: result['message'] ?? 'Failed to add staff',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
     }
   }

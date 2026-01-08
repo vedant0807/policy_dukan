@@ -1428,6 +1428,44 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getRenewals({int daysAhead = 30}) async {
+    final url = Uri.parse('$baseUrl/policies/renewals?daysAhead=$daysAhead');
+
+    print('📤 GetRenewals Request URL: $url');
+
+    try {
+      final headers = await _getHeaders();
+
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      print('📥 GetRenewals Response Status: ${response.statusCode}');
+      print('📥 GetRenewals Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+        return {
+          'success': true,
+          'data': responseBody,
+        };
+      } else {
+        final Map<String, dynamic> errorBody = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': errorBody['message'] ?? 'Failed to fetch renewals',
+        };
+      }
+    } catch (e) {
+      print('❌ GetRenewals Error: $e');
+      return {
+        'success': false,
+        'message': 'Error: $e',
+      };
+    }
+  }
 
 
 }

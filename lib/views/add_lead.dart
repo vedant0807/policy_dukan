@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/widgets/primary_button.dart';
 import 'package:policy_dukaan/widgets/primary_text_field.dart';
@@ -177,8 +178,12 @@ class _AddLeadState extends State<AddLead> {
     emailController.text.isEmpty ||
     phoneController.text.length != 10 ||
     selectedInsurances.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Please fill all required fields")),
+    Fluttertoast.showToast(
+      msg: "Please fill all required fields",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black,
+      textColor: Colors.white,
     );
     return;
     }
@@ -199,13 +204,21 @@ class _AddLeadState extends State<AddLead> {
     setState(() => isLoading = false);
 
     if (result['success']) {
-    ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Lead added successfully")),
+    Fluttertoast.showToast(
+      msg: "Lead added successfully",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
     );
     Navigator.pop(context, true); // ✅ tells previous screen to refresh
     } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(result['message'])),
+    Fluttertoast.showToast(
+      msg: result['message'] ?? 'Failed to add lead',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
     );
     }
     },

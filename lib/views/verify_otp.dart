@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/views/tab_screen.dart';
 import '../api_service.dart';
 import '../session_manager.dart';
@@ -52,8 +53,12 @@ class _VerifyOtpState extends State<VerifyOtp> {
     final enteredOtp = otp;
 
     if (enteredOtp.length != otpLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter the complete 6-digit OTP')),
+      Fluttertoast.showToast(
+        msg: 'Please enter the complete 6-digit OTP',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.black,
+        textColor: Colors.white,
       );
       return;
     }
@@ -86,11 +91,12 @@ class _VerifyOtpState extends State<VerifyOtp> {
 
           // Show success message
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(result['message'] ?? 'Login successful'),
-                backgroundColor: Colors.green,
-              ),
+            Fluttertoast.showToast(
+              msg: result['message'] ?? 'Login successful',
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
             );
           }
 
@@ -107,33 +113,36 @@ class _VerifyOtpState extends State<VerifyOtp> {
         } else {
           print('❌ Failed to save session');
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Failed to save login session'),
-                backgroundColor: Colors.red,
-              ),
+            Fluttertoast.showToast(
+              msg: 'Failed to save login session',
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
             );
           }
         }
       } else {
         print('❌ Token or user data is missing in response');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid response from server'),
-              backgroundColor: Colors.red,
-            ),
+          Fluttertoast.showToast(
+            msg: 'Invalid response from server',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
           );
         }
       }
     } else {
       print('❌ OTP Verification Failed: ${result['message']}');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'OTP verification failed'),
-            backgroundColor: Colors.red.shade600,
-          ),
+        Fluttertoast.showToast(
+          msg: result['message'] ?? 'OTP verification failed',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
         );
       }
     }

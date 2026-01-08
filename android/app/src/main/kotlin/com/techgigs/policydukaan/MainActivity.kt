@@ -1,4 +1,4 @@
-package com.example.policy_dukaan
+package com.techgigs.policydukaan
 
 import io.flutter.embedding.android.FlutterActivity
 

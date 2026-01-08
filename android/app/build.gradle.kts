@@ -1,14 +1,13 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.example.policy_dukaan"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    namespace = "com.techgigs.policydukaan"
+    compileSdk = 36 // Updated for Android 15
+    ndkVersion = "29.0.14206865"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -20,21 +19,38 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.policy_dukaan"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
+        applicationId = "com.techgigs.policydukaan"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        targetSdk = 35 // Updated for Android 15
+        versionCode = 1
+        versionName = "1.0.0"
+
+        // Tells the NDK to support 16kb alignment during compilation
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_EXT_COMP_16K=ON")
+            }
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // CRITICAL: This allows the OS to load native libraries
+            // directly from the APK with 16 KB page alignment.
+            useLegacyPackaging = true
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+
+            // Ensures the linker uses 16kb page size for release builds
+            externalNativeBuild {
+                cmake {
+                    cppFlags("-Wl,-z,max-page-size=16384")
+                }
+            }
         }
     }
 }

@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:policy_dukaan/utils/app_colors.dart';
+import 'package:policy_dukaan/views/tab_screen.dart';
 import 'package:policy_dukaan/widgets/custom_appbar.dart';
 import 'package:policy_dukaan/api_service.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:policy_dukaan/widgets/primary_button.dart';
 
 import 'my_policies.dart';
@@ -342,7 +344,13 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
       final endDateISO = _convertDateToISO(_policyEndDateController.text);
 
       if (dobISO == null || startDateISO == null || endDateISO == null) {
-        _showErrorSnackBar('Invalid date format. Please check all dates.');
+        Fluttertoast.showToast(
+          msg: 'Invalid date format. Please check all dates.',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
         return;
       }
 
@@ -394,7 +402,7 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
 
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const PoliciesScreen()),
+          MaterialPageRoute(builder: (_) => const TabScreen(initialIndex: 1,)),
               (route) => false,
         );
       }
@@ -457,26 +465,22 @@ class _AddPolicyScreenState extends State<AddPolicyScreen> {
   }
 
   void _showSuccessSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
     );
   }
 
   void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
     );
   }
 
