@@ -20,6 +20,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool isLoading = false;
 
+  // Testing credentials
+  static const String testEmail = 'test.techgigs@gmail.com';
+  static const String testOtp = '123456';
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill test email for testing
+    emailController.text = testEmail;
+  }
+
   Future<void> sendOtp() async {
     final email = emailController.text.trim();
 
